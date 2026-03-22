@@ -1,0 +1,41 @@
+name: Deploy NestJS to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: docker build -t nest-app-v1 .
+
+      - name: Save Docker image
+        run: docker save nest-app-v1 > nest-app-v1.tar
+
+      - name: Copy to EC2
+        uses: appleboy/scp-action@v0.1.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: 'nest-app.tar'
+          target: '/home/ubuntu/'
+
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            docker load < nest-app-v1.tar
+            docker stop nest-app-v1 || true
+            docker rm nest-app-v1 || true
+            docker run -d -p 3000:3000 --name nest-app-v1 nest-app-v1
