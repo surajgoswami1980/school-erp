@@ -18,7 +18,9 @@ jobs:
 
       - name: Save Docker image
         run: docker save nest-app-v1 > nest-app-v1.tar
-
+      # 🔍 Debug (IMPORTANT)
+      - name: Check files
+        run: ls -la
       - name: Copy to EC2
         uses: appleboy/scp-action@v0.1.3
         with:
